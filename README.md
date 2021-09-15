@@ -71,6 +71,29 @@
     - [如何使用指针？](#如何使用指针)
     - [C中的NULL指针](#c中的null指针)
     - [C 指针详解](#c-指针详解)
+    - [C 函数指针](#c-函数指针)
+    - [回调函数](#回调函数)
+  - [C 字符串](#c-字符串)
+  - [C 结构体](#c-结构体)
+    - [定义结构体](#定义结构体)
+    - [结构体变量的初始化](#结构体变量的初始化)
+    - [访问结构体成员](#访问结构体成员)
+    - [结构体作为函数参数](#结构体作为函数参数)
+    - [指向结构体的指针](#指向结构体的指针)
+  - [C 共用体](#c-共用体)
+    - [定义共用体](#定义共用体)
+    - [访问共用体成员](#访问共用体成员)
+  - [C 位域](#c-位域)
+    - [位域声明](#位域声明)
+    - [位域的定义和位域变量的说明](#位域的定义和位域变量的说明)
+    - [位域的使用](#位域的使用)
+  - [C typedef](#c-typedef)
+    - [typedef vs #define](#typedef-vs-define)
+  - [C 输入 & 输出](#c-输入--输出)
+    - [标准文件](#标准文件)
+    - [getchar()&putchar()函数](#getcharputchar函数)
+    - [gets()&puts()函数](#getsputs函数)
+    - [scanf()&printf()函数](#scanfprintf函数)
 
 ## C 程序结构
 
@@ -2092,3 +2115,1136 @@ if(!ptr) /* 如果p为空，则完成 */
 |[指向指针的指针](GUIDE/C%20指向指针的指针.md)|C允许指向指针的指针|
 |[传递指针给函数](GUIDE/传递指针给函数.md)|通过引用或地址传递参数，使传递的参数在调用函数中被改变|
 |[从函数返回指针](GUIDE/从函数返回指针.md)|C允许函数返回指针到局部变量、静态变量和动态内存分配|
+
+### C 函数指针
+
+函数指针是指向函数的指针变量。  
+通常说的是指针变量是指向一个整型、字符型或数组等变量，而函数指针是指向函数。  
+函数指针可以像一般函数一样，用于调用函数、传递参数。  
+函数指针变量的声明：
+
+```c
+typedef int (*fun_ptr)(int, int); // 声明一个指向同样参数、返回值的函数指针类型
+```
+
+以下实例声明了函数指针变量p,指向函数max：
+
+```c
+#include <stdio.h>
+
+int max(int x, int y)
+{
+    return x > y ? x : y;
+}
+
+int main(void)
+{
+    /* p 是函数指针 */
+    int (*p)(int, int) = &max;  // &可以省略
+    int a, b, c, d;
+
+    printf("请输入三个数字：");
+    scanf("%d %d %d", &a, &b, &c);
+
+    /* 与直接调用函数等价，d = max（max（a，b），c） */
+    d = p(p(a, b), c);
+
+    printf("最大的数字是：%d\n", d);
+
+    return 0;
+}
+```
+
+当上面的代码被编译和执行时，运行结果：
+> 请输入三个数字：1 2 3  
+最大的数字是：3
+
+### 回调函数
+
+**函数指针作为某个函数的参数**
+
+函数指针变量可以作为某个函数的参数来使用的，回调函数就是一个通过函数指针调用的函数。  
+简单讲：回调函数是由别人的函数执行时调用你实现的函数。
+
+> 以下来自知乎作者常溪玲的解说：  
+> 你到了一个商店买东西，刚好你要的东西没有货，于是你在店员那里留下了你的电话，过了几天店里有货了，店员就打了你的电话，然后你接到电话后就到了店里去取了货。在这个例子里，你的电话号码就叫回调函数，你把电话留给店员就叫登记回调函数，店里后来有货了叫做触发了回调关联的事件，店员给你打电话叫做调用回调函数，你到店里去取货叫做响应回调事件。
+
+下面编写一个实例，实例中`populate_array`函数定义了三个参数，其中第三个参数是函数的指针，通过该函数来设置数组的值。  
+实例中定义了回调函数`getNextRandomValue`,它返回一个随机值，它作为一个函数指针传递给`populate_array`函数。  
+`populate_array`将调用10次回调函数，并将回调函数的返回值赋值给数组。
+
+```c
+#include <stdlib.h>
+#include <stdio.h>
+
+// 回调函数
+void populate_array(int *array, size_t arraySize, int (*getNextValue)(void))
+{
+    for (size_t i = 0; i < arraySize; i++)
+    {
+        array[i] = getNextValue();
+    }
+    
+}
+
+// 获取随机值
+int getNextRandomValue(void)
+{
+    return rand();
+}
+
+int main(void)
+{
+    int myarray[10];
+    /* getNextRandomValue 不能加括号，否则无法编译，因为加上括号之后相当于传入此参数时传入了int，
+     * 而不是函数指针 
+     */
+    populate_array(myarray, 10, getNextRandomValue);
+    for (int i = 0; i < 10; i++)
+    {
+        printf("%d ", myarray[i]);
+    }
+    printf("\n");
+    return 0;
+}
+```
+
+当上面的代码被编译和执行，运行结果：
+> 41 18467 6334 26500 19169 15724 11478 29358 26962 24464
+
+## C 字符串
+
+在C语言中，字符串实际上是使用`null`字符`\0`终止的一维字符数组。因此，一个以`null`结尾的字符串，包含了组成字符串的字符。  
+下面的声明和初始化创建了一个`RUNADIAO`字符串。由于在数组的末尾存储了空字符，所以字符数组的大小比单词`RUNOOB`的字符数多一个。  
+
+```c
+char site[7] = {`R`, `U`, `N`, `A`, `D`, `I`, `A`, `D`, `\0`};
+```
+
+依据数组初始化规则，可以把上面的语句写成以下语句：
+
+```c
+char site[] = "RUNADIAO";
+```
+
+其实，不需要把`null`字符放在字符串常量的末尾。C编译器会在初始化数组时，自动把`\0`放在字符串的末尾。  
+现在，尝试输出上面的字符串：
+
+```c
+#include <stdio.h>
+
+int main()
+{
+    char site[8] = {'R', 'U', 'N', 'A', 'D', 'I', 'A', 'O'};
+
+    printf("冲啊，阿雕：%s\n", site);
+
+    return 0;
+}
+```
+
+当上面的代码被编译和执行时，运行结果：
+> 冲啊，阿雕：RUNADIAO
+
+C中有大量操作字符串的函数：
+
+|序号|函数&目的|
+|--|--|
+|1| **strcpy(s1, s2);** </br>复制字符串s2到字符串s1|
+|2| **strcat(s1, s2);** </br>连接字符串s2到字符串s1的末尾|
+|3| **strlen(s1);** </br>返回字符串s1的长度|
+|4| **strcmp(s1, s2);** </br>如果s1和s2是相同的，则返回0；如果s1<s2则返回小于0；如果s1>s2则返回大于0|
+|5| **strchr(s1, ch);** </br>返回一个指针，指向字符串s1中字符ch的第一次出现的位置|
+|6| **strstr(s1, s2);** </br>返回一个指针，指向字符串s1中字符串s2|
+
+下面的实例使用了上述的一些函数：
+
+```c
+#include <stdio.h>
+#include <string.h>
+
+int main()
+{
+    char str1[14] = "runadiao";
+    char str2[14] = "google";
+    char str3[14];
+    int len;
+
+    /* 复制 str1 到 str3 */
+    strcpy(str3, str1);
+    printf("strcpy(str3, str1): %s\n", str3);
+
+    /* 连接 str1 和 str2 */
+    strcat(str1, str2);
+    printf("strcat(str1, str2): %s\n", str1);
+
+    /* 连接后，str1的总长度 */
+    len = strlen(str1);
+    printf("strlen(str1): %d\n", len);
+
+    return 0;
+}
+```
+
+当上面的代码被编译和执行时，运行结果：
+> strcpy(str3, str1): runadiao  
+strcat(str1, str2): runadiaogoogle  
+strlen(str1): 14
+
+可以在C标准库中找到更多字符串相关的函数。
+
+## C 结构体
+
+C 数组允许定义可存储相同类型的数据项的变量， **结构体** 是C编程中另一种用户自定义的可用的数据类型，允许存储不同类型的数据项。  
+**结构体** 用于表示一条记录，假设想要跟踪图书馆中书本的动态，可能需要跟踪每本书的下列属性：
+
+- Title
+- Author
+- Subject
+- Book ID
+
+### 定义结构体
+
+为了定义结构体，必须使用`struct`语句。`struct`语句定义了一个包含多个成员的新的数据类型，`struct`语句的格式如下：
+
+```c
+struct tag {
+    member-list
+    member-list
+    member-list
+    ...
+} varliable-list;
+```
+
+`tag`是结构体标签。  
+`member-list`是标准的变量定义，比如`int i;`或者`float f;`或者其他有效的变量定义。  
+`variable-list`结构变量，定义在结构体的末尾，最后一个分号之前，可以指定一个或多个结构体变量。下面是声明`Book`结构体的方式：
+
+```c
+struct Books
+{
+    char title[50];
+    char author[50];
+    char subject[100];
+    int book_id;
+} book;
+```
+
+在一般情况下，`tag`、`member-list`、`variable-list`这3个部分至少要出现2个。以下为实例：
+
+```c
+/* 此声明声明了拥有3个成员的结构体，分别为整型的a，字符型的b和双精度的c
+ * 同时又声明了结构体变量s1
+ * 这个结构体并没有标明其标签
+ */
+struct
+{
+    int a;
+    char b;
+    double c;
+} s1;
+
+/* 此声明声明了拥有3个成员的结构体，分别为整型的a，字符型的b和双精度的c
+ * 结构体的标签被命名为SIMPLE，没有声明变量
+ */
+struct SIMPLE
+{
+    int a;
+    char b;
+    double c;
+};
+
+// 用SIMPLE标签的结构体，另外声明了变量t1、t2、t3
+struct SIMPLE t1, t2[20], *t3;
+
+// 也可以用typedef创建新类型
+typedef struct
+{
+    int a;
+    char b;
+    double c;
+} Simple2;
+
+//现在可以用Simple2作为类型声明新的结构体变量
+Simple2 u1, u2[20], *u3;
+```
+
+在上面的声明中，第一个和第二个声明被编译器当作两个完全不同的类型，即使它们的成员列表是一样的，如果令`t3=&s1`，则是非法的。  
+结构体的成员可以包含其他结构体，也可以包含指向自己的结构体类型的指针，而通常这种指针的应用是为了实现一些更高级的数据结构如链表和树等。  
+
+```c
+// 此结构体的声明包含了其他的结构体
+struct COMPLEX
+{
+    char string[100];
+    struct SIMPLE a;
+};
+
+// 此结构体的声明包含了指向自己类型的指针
+struct NODE
+{
+    char string[100];
+    struct NODE *next_node;
+};
+```
+
+如果两个结构体互相包含，则需要对其中一个结构体进行不完整声明，如下所示：
+
+```c
+struct B;  // 对结构体B进行不完整说明
+
+// 结构体A中包含指向结构体B的指针
+struct A
+{
+    struct B *partner;
+    // other members;
+};
+
+// 结构体B中包含指向结构体A的指针，在A声明完之后，B也随之进行声明
+struct B
+{
+    struct A *partner;
+    // other members;
+};
+```
+
+### 结构体变量的初始化
+
+和其它类型变量一样，对结构体变量可以在定义时指定初始值。  
+
+```c
+#include <stdio.h>
+
+struct Books
+{
+    char title[50];
+    char author[50];
+    char subject[100];
+    int book_id;
+} book = {"C 语言", "ADIAO", "编程语言", 123456};
+
+int main()
+{
+    printf("title: %s\nauthor: %s\nsubject: %s\nbook_id: %d\n", book.title, book.author, book.subject, book.book_id);
+    return 0;
+}
+
+```
+
+当上面的代码被编译和执行时，运行结果：
+> title: C 语言  
+author: ADIAO  
+subject: 编程语言  
+book_id: 123456
+
+### 访问结构体成员
+
+为了访问结构体的成员，我们使用 **成员访问运算符** `.`。成员访问运算符是结构体变量名称和我们要访问的结构体成员之间的一个句号。可以使用`struct`关键字来定义结构体类型的变量。  
+下面的实例演示了结构体的用法：
+
+```c
+#include <stdio.h>
+#include <string.h>
+
+struct Books
+{
+    char title[50];
+    char author[50];
+    char subject[100];
+    int book_id;
+};
+
+int main()
+{
+    struct Books Book_1; /* 声明Book1，类型为Books */
+    struct Books Book_2; /* 声明Book2，类型为Books */
+
+    /* Book1 详述 */
+    strcpy(Book_1.title, "C Programming");
+    strcpy(Book_1.author, "Nuda Ali");
+    strcpy(Book_1.subject, "C Programming Tutorial");
+    Book_1.book_id = 6496548;
+
+    /* Book2 详述 */
+    strcpy(Book_2.title, "Telecom Billing");
+    strcpy(Book_2.author, "Zara Ali");
+    strcpy(Book_2.subject, "Telecom Billing Tutorial");
+    Book_2.book_id = 6488412;
+
+    /* 输出Book1 信息 */
+    printf("Book_1 title is %s\n", Book_1.title);
+    printf("Book_1 author is %s\n", Book_1.author);
+    printf("Book_1 subject is %s\n", Book_1.subject);
+    printf("Book_1 book_id is %d\n", Book_1.book_id);
+
+    /* 输出Book2 信息 */
+    printf("Book_2 title is %s\n", Book_2.title);
+    printf("Book_2 author is %s\n", Book_2.author);
+    printf("Book_2 subject is %s\n", Book_2.subject);
+    printf("Book_2 book_id is %d\n", Book_2.book_id);
+
+    return 0;
+}
+```
+
+当上面的代码被编译和执行时，运行结果：
+> Book_1 title is C Programming  
+Book_1 author is Nuda Ali  
+Book_1 subject is C Programming Tutorial  
+Book 1 book_id is 6496548  
+Book_2 title is Telecom Billing  
+Book_2 author is Zara Ali  
+Book_2 subject is Telecom Billing Tutorial  
+Book_2 book_id is 6488412
+
+### 结构体作为函数参数
+
+可以把结构体作为函数参数，传参方式与其他类型的变量或指针类似。可以时候用上面的实例中的方式来访问结构变量：
+
+```c
+#include <stdio.h>
+#include <string.h>
+
+struct Books
+{
+    char title[50];
+    char author[50];
+    char subject[100];
+    int book_id;
+};
+
+/* 函数声明 */
+void printBook(struct Books book);
+
+int main()
+{
+    struct Books Book_1; /* 声明 Book_1，类型为 Books */
+    struct Books Book_2; /* 声明 Book_2，类型为 Books */
+
+    /* Book_1 详述 */
+    strcpy(Book_1.title, "C Programming");
+    strcpy(Book_1.author, "Nuda Ali");
+    strcpy(Book_1.subject, "C Programming Tutorial");
+    Book_1.book_id = 6496548;
+
+    /* Book2 详述 */
+    strcpy(Book_2.title, "Telecom Billing");
+    strcpy(Book_2.author, "Zara Ali");
+    strcpy(Book_2.subject, "Telecom Billing Tutorial");
+    Book_2.book_id = 6488412;
+
+    /* 输出 Book_1 信息 */
+    printBook(Book_1);
+
+    /* 输出 Book_2 信息 */
+    printBook(Book_2);
+
+    return 0;
+}
+
+void printBook(struct Books book)
+{
+    printf("Book title is %s\n", book.title);
+    printf("Book author is %s\n", book.author);
+    printf("Book subject is %s\n", book.subject);
+    printf("Book book_id is %d\n", book.book_id);
+}
+```
+
+当上面的代码被编译和运行时，运行结果：
+> Book title is C Programming  
+Book author is Nuda Ali  
+Book subject is C Programming Tutorial  
+Book book_id is 6496548  
+Book title is Telecom Billing  
+Book author is Zara Ali  
+Book subject is Telecom Billing Tutorial  
+Book book_id is 6488412
+
+### 指向结构体的指针
+
+可以定义指向结构体的指针，方式与定义指向其它类型变量的指针相似，如下所示：
+
+```c
+struct Books *struct_pointer;
+```
+
+现在，可以在上述定义的指针变量中存储结构体变量的地址。为了查找结构体变量的地址，请把`&`运算符放在结构体名称的前面，如下所示：
+
+```c
+struct_pointer = &Book_1;
+```
+
+为了使用指向该结构体的指针访问结构体的成员，必须使用`->`运算符，如下所示：
+
+```c
+struct_pointer->title;
+```
+
+现在使用结构体指针来重写上面的实例，这有助于理解结构指针的概念：
+
+```c
+#include <stdio.h>
+#include <string.h>
+
+struct Books
+{
+    char title[50];
+    char author[50];
+    char subject[100];
+    int book_id;
+};
+
+/* 函数声明 */
+void printBook(struct Books *book);
+
+int main()
+{
+    struct Books Book_1; /* 声明 Book_1，类型为 Books */
+    struct Books Book_2; /* 声明 Book_2，类型为 Books */
+
+    /* Book_1 详述 */
+    strcpy(Book_1.title, "C Programming");
+    strcpy(Book_1.author, "Nuda Ali");
+    strcpy(Book_1.subject, "C Programming Tutorial");
+    Book_1.book_id = 6496548;
+
+    /* Book2 详述 */
+    strcpy(Book_2.title, "Telecom Billing");
+    strcpy(Book_2.author, "Zara Ali");
+    strcpy(Book_2.subject, "Telecom Billing Tutorial");
+    Book_2.book_id = 6488412;
+
+    /* 输出 Book_1 信息 */
+    printBook(&Book_1);
+
+    /* 输出 Book_2 信息 */
+    printBook(&Book_2);
+
+    return 0;
+}
+
+void printBook(struct Books *book)
+{
+    printf("Book title is %s\n", book->title);
+    printf("Book author is %s\n", book->author);
+    printf("Book subject is %s\n", book->subject);
+    printf("Book book_id is %d\n", book->book_id);
+}
+```
+
+当上面的代码被编译和执行时，运行结果：
+> Book title is C Programming  
+Book author is Nuda Ali  
+Book subject is C Programming Tutorial  
+Book book_id is 6496548  
+Book title is Telecom Billing  
+Book author is Zara Ali  
+Book subject is Telecom Billing Tutorial  
+Book book_id is 6488412
+
+## C 共用体
+
+**共用体** 是一种特殊的数据类型，允许在相同的内存位置存储不同的数据类型。可以定义一个带有多个成员的共用体，但是任何时候只能有一个成员带有值。共用体提供了一种使用相同的内存位置的有效方式。
+
+### 定义共用体
+
+为了定义共用体，必须使用`union`语句，方式与定义结构体类似。`union`语句定义了一个新的数据类型，带有多个成员。`union`语句的格式如下：
+
+```c
+union [union tag]
+{
+    member defintion;
+    member defintion;
+    ···
+    member defintion;
+}[one or more union variables];
+```
+
+`union tag`是可选的，每个`member definition`是标准的变量定义，比如`int i;`或者`float f;`或者其他有效的变量定义之类的。在共用体定义的末尾，最后一个分号之前，可以指定一个或多个共用体变量，这是可选的。下面定义一个名为`Data`的共用体类型，有三个成员`i`、`f`和`str`：
+
+```c
+union Data
+{
+    int i;
+    float f;
+    char str[20];
+} data;
+```
+
+现在，`Data`类型的变量可以存储一个整数、一个浮点数，或者一个字符串。这意味着一个变量（相同的内存位置）可以存储多个多种类型的数据。还可以根据需要在一个共用体内使用任意内置的或者用户自定义的数据类型。  
+共用体占用的内存应足够存储共用体中最大的成员。例如，在上面的实例中，`Data`将占用20个字节的内存空间，因为在各个成员中，字符串所占用的空间是最大的。下面的实例将显示上面的共用体占用的总内存大小：
+
+```c
+#include <stdio.h>
+#include <string.h>
+
+union Data
+{
+    int i;
+    float f;
+    char str[20];
+};
+
+int main()
+{
+    union Data data;
+
+    printf("Memory size occupied by data: %d\n", sizeof(data));
+
+    return 0;
+}
+```
+
+当上面的代码被编译和执行时，运行结果：
+> Memory size occupied by data: 20
+
+### 访问共用体成员
+
+为了访问共用体的成员，使用 **成员访问运算符** `.`。成员访问运算符是共用体变量名称和我们要访问的共用体成员之间的一个句号。可以使用`union`关键字来定义共用体类型的变量。  
+下面的实例演示了共用体的用法：
+
+```c
+#include <stdio.h>
+#include <string.h>
+
+union Data
+{
+    int i;
+    float f;
+    char str[20];
+};
+
+int main()
+{
+    union Data data;
+
+    data.i = 10;
+    data.f = 220.5;
+    strcpy(data.str, "C Programming");
+
+    printf("data.i : %d\n", data.i);
+    printf("data.f : %f\n", data.f);
+    printf("data.str : %s\n", data.str);
+
+    return 0;
+}
+```
+
+当上面的代码被编译和执行时，运行结果：
+> data.i : 1917853763  
+data.f : 4122360580327794900000000000000.000000  
+data.str : C Programming
+
+在这里，可以看到共用体的`i`和`f`成员的值有损坏，因为最后赋给变量的值占用了内存位置，这也是`str`成员能够完好输出的原因。  
+现在，再来看一个相同的实例，这次我们在同一时间只使用一个变量，这也演示了使用共用体的主要目的：
+
+```c
+#include <stdio.h>
+#include <string.h>
+
+union Data
+{
+    int i;
+    float f;
+    char str[20];
+};
+
+int main()
+{
+    union Data data;
+
+    data.i = 10;
+    printf("data.i : %d\n", data.i);
+
+    data.f = 220.5;
+    printf("data.f : %f\n", data.f);
+
+    strcpy(data.str, "C Promgramming");
+    printf("data.str : %s\n", data.str);
+
+    return 0;
+}
+```
+
+当上面的代码被编译和执行时，运行结果：
+> data.i : 10  
+data.f : 220.500000  
+data.str : C Promgramming
+
+在这里，所有的成员都能完好的输出，因为同一时间只用到一个成员。
+
+## C 位域
+
+如果程序的结构中包含多个开关量，只有`TRUE/FALSE`变量，如下：
+
+```c
+struct
+{
+    unsigned int widthValidated;
+    unsigned int heightValidated;
+} status;
+```
+
+这种结构需要8字节的内存空间，但在实际上，在每个变量中，只存储`0`或`1`。在这种情况下，C语言提供了一种更好的利用内存空间的方式。如果在结构体中使用这样的变量，可以定义变量的宽度来告诉编译器，只需使用这些字节。例如，上面的结构可以重写成：
+
+```c
+struct
+{
+    unsigned int widthValidated : 1;
+    unsigned int heightValidated : 1;
+} status;
+```
+
+现在，上面的结构中，status变量将占用4个字节的内存空间，但是只有2位被用来存储值。如果使用了32个变量，每一个变量的宽度位1位，那么`status`结构将使用4个字节，但只要再多用一个变量，如果使用了33个变量，那么它将分配内存的下一段来存储第33个变量，这个时候就开始使用8个字节。  
+看看下面的实例来理解这个概念：
+
+```c
+#include <stdio.h>
+#include <string.h>
+
+/* 定义简单的结构 */
+struct{
+    unsigned int widthValidated;
+    unsigned int heightValidated;
+} status_1;
+
+/* 定义位域结构 */
+struct
+{
+    unsigned int widthValidated : 1;
+    unsigned int heightValidated : 1;
+} status_2;
+
+int main()
+{
+    printf("Memory size occupied by status_1 is %d\n", sizeof(status_1));
+    printf("Memory size occupied by status_2 is %d\n", sizeof(status_2));
+
+    return 0;
+}
+```
+
+当上面的代码被编译和执行时，运行结果：
+> Memory size occupied by status_1 is 8  
+Memory size occupied by status_2 is 4
+
+### 位域声明
+
+有些信息在存储时，并不需要占用一个完整的字节，而只需占几个或者一个二进制位。例如在存放一个开关量时，只有`0`和`1`两种状态，用1位二进制位即可。为了节省存储空间，并使处理简便，C语言又提供了一种数据结构，称为"位域"或"位段"。  
+所谓"位域"是把一个字节中的二进制位划分位几个不同的区域，并说明每个区域的位数。每个域有一个域名，允许在程序中按域名进行操作。这样就可以把几个不同的对象用一个字节的二进制位域来表示。  
+典型的实例：
+
+- 用1位二进制位存放一个开关量时，只有`0`和`1`两种状态。
+- 读取外部文件格式——可以读取非标准的文件格式。例如：9位的整数。
+
+### 位域的定义和位域变量的说明
+
+位域定义和结构定义相仿，其形式为：
+
+```c
+struct 位域结构名
+{
+    位域列表
+};
+```
+
+其中位域列表的形式为：
+
+```c
+type [member_name] : width;
+```
+
+下面是有关位域中变量元素的描述：
+
+|元素|描述|
+|--|--|
+|type|只能为`int`（整型），`unsigned int`（无符号整型），`signed int`（有符号整型）三种类型，决定了如何解释位域的值|
+|member_name|位域的名称|
+|width|位域中位的数量。宽度必须小于或等于指定类型的位宽度|
+
+带有预定义宽度的变量被称为 **位域** 。位域可以存储多于1位的数，例如，需要一个变量来存储从0到7的值，可以定义一个宽度为3位的位域，如下所示：
+
+```c
+struct
+{
+    unsigned int age : 3;
+} Age;
+```
+
+上面的结构定义指示C编译器，`age`变量将只使用3位来存储这个值，如果试图使用超过3位，则无法完成。
+
+```c
+struct bs{
+    int a: 8;
+    int b: 2;
+    int c: 6;
+} data;
+```
+
+`data`为`bs`变量，共占两个字节。其中位域`a`占8位，位域`b`占2位，位域`c`占6位。  
+再来看一个实例：
+
+```c
+struct packed_struct {
+    unsigned int f1: 1;
+    unsigned int f2: 1;
+    unsigned int f3: 1;
+    unsigned int f4: 1;
+    unsigned int type: 4;
+    unsigned int my_int: 9;
+} pack;
+```
+
+在这里，`packed_struct`包含了6个成员：四个1位的标识符`f1..f4`、一个4位的`type`和一个9位的`my_int`。  
+看下面的实例：
+
+```c
+#include <stdio.h>
+#include <string.h>
+
+struct
+{
+    unsigned int age : 3;
+} Age;
+
+int main()
+{
+    Age.age = 4;
+    printf("Sizeof(Age) : %d\n", sizeof(Age));
+    printf("Age.age : %d\n", Age.age);
+
+    Age.age = 7;
+    printf("Age.age : %d\n", Age.age);
+
+    Age.age = 8; // 二进制表示为1000有四位，超出
+    printf("Age.age : %d\n", Age.age);
+
+    return 0;
+}
+```
+
+当上面的代码编译，警告如下：
+> .\16-5.c: In function 'main':  
+.\16-5.c:18:15: warning: unsigned conversion from 'int' to 'unsigned char:3' changes value from '8' to '0' [-Woverflow]  
+     Age.age = 8;
+
+**对于位域的定义尚有以下几点说明：**
+
+- 一个位域存储在同一字节中，如一个字节所剩空间不够存放另一位域时，则会从下一单元起存放该位域。也可以有意使某位域从下一单元开始。例如：  
+  
+  ```c
+  struct bs{
+      unsigned a: 4;
+      unsigned  : 4; /* 空域 */
+      unsigned b: 4; /* 从下一单元开始存放 */
+      unsigned c: 4;
+  };
+  ```
+  
+  在这个位域定义中，`a`占第一字节的4位，后4位填0表示不使用，`b`从第二字节开始，占用4位，`c`占用4位。
+
+- 位域的宽度不能超过它所依附的数据类型的长度，成员变量都是有类型的，这个类型限制了成员变量的最大长度，`:`后面的数字不能超过这个长度
+- 位域可以时无名位域，这时它只用来作填充或调整位置。无名的位域是不能使用的。例如：
+  
+  ```c
+  struct k{
+      int a: 1;
+      int  : 2; /* 该2位不能使用 */
+      int b: 3;
+      int c: 2;
+  };
+  ```
+
+从以上分析可以看出，位域在本质上就是一种结构类型，不过其成员是按二进位分配的。  
+
+### 位域的使用
+
+位域的使用和结构成员的使用相同，其一般形式为：
+
+```c
+位域变量名.位域名
+位域变量名->位域名
+```
+
+位域允许用各种格式输出。
+看下面的实例：
+
+```c
+#include <stdio.h>
+
+int main()
+{
+    struct bs{
+        unsigned a: 1;
+        unsigned b: 3;
+        unsigned c: 4;
+    } bit, *pbit;
+    
+    bit.a = 1; /* 给位域赋值（应注意赋值不能超过该位域的允许范围） */
+    bit.b = 7; /* 给位域赋值（应注意赋值不能超过该位域的允许范围） */
+    bit.c = 15; /* 给位域赋值（应注意赋值不能超过该位域的允许范围） */
+
+    printf("%d, %d, %d\n", bit.a, bit.b, bit.c); /* 以整型变量格式输出三个域的内容 */
+    
+    pbit = &bit; /* 把位域变量bit的地址发送给指针变量pbit */
+    pbit->a = 0; /* 用指针方式给位域a 重新赋值，赋为0 */
+    pbit->b&=3; /* 使用了复合位运算符"&=", 相当于：pbit->b = pbit->b&3, 位域b中原有值为7，与3作按位与运算的结果为3（111&011=011，十进制值为3） */
+    pbit->c|=1; /* 使用了复合位运算符"|="，相当于：pbit->b = pbit->b|，其结果为15 */
+    
+    printf("%d, %d, %d\n", pbit->a, pbit->b, pbit->c); /* 用指针方式输出了这三个域的值 */
+}
+```
+
+上例程序中定义了位域结构`bs`，三个位域为`a`, `b`, `c`。说明了`bs`类型的变量`bit`和指向`bs`类型的指针变量`pbit`。这表示位域也是可以使用指针的。
+
+当上面的代码被编译和执行时，运行结果：
+> 1, 7, 15  
+0, 3, 15
+
+## C typedef
+
+C语言提供了`typedef`关键字，可以使用它来为类型取一个新的名字。下面的实例为单字节数字定义了一个术语`BYTE`：
+
+```c
+typedef unsigned char BYTE;
+```
+
+在这个类型定义之后，标识符`BYTE`可作为类型`unsigned char`的缩写 ，例如：
+
+```c
+BYTE b1, b2;
+```
+
+按照惯例，定义时会大写字母，以便提醒用户类型名称是一个象征性的缩写，但也可以使用小写字母，如下：
+
+```c
+typedef unsigned char byte;
+```
+
+也可以使用`typedef`来为用户自定义的数据类型取一个新的名字。例如，可以对结构体使用`typedef`来定义一个新的数据类型名字，然后使用这个新的数据类型来直接定义结构变量，如下：
+
+```c
+#include <stdio.h>
+#include <string.h>
+
+typedef struct Books
+{
+    char title[50];
+    char author[50];
+    char subject[100];
+    int book_id;
+} Book;
+
+int main()
+{
+    Book book;
+
+    strcpy(book.title, "C 学习之路");
+    strcpy(book.author, "ADIAO");
+    strcpy(book.subject, "编程语言");
+    book.book_id = 12356;
+
+    printf("书标题： %s\n", book.title);
+    printf("书作者： %s\n", book.author);
+    printf("书类目: %s\n", book.subject);
+    printf("书 ID： %d\n", book.book_id);
+
+    return 0;
+}
+```
+
+当上面的代码被编译和执行时，运行结果：
+> 书标题： C 学习之路  
+书作者： ADIAO  
+书类目: 编程语言  
+书 ID： 12356
+
+### typedef vs #define
+
+`#define`是C指令，用于为各种数据类型定义别名，与`typedef`类似，但是它们有以下几点不同：
+
+- `typedef`仅限于为类型定义符号名称，`#define`不仅可以为类型定义别名，也能为数值定义别名，比如可以定义`1`为`ONE`。
+- `typedef`是由编译器执行解释的，`#define`语句是由预编译器进行处理的。
+
+下面是`#define`的最简单的用法：
+
+```c
+#include <stdio.h>
+
+#define TRUE 1
+#define FALSE 0
+
+int main()
+{
+    printf("TRUE 的值：%d\n", TRUE);
+    printf("FALSE 的值：%d\n", FALSE);
+
+    return 0;
+}
+```
+
+当上面的代码被编译和执行时，运行结果：
+> TRUE 的值：1  
+FALSE 的值：0
+
+## C 输入 & 输出
+
+当提到 **输入** 时，这意味着要向程序填充一些数据。输入可以是以文件的形式或从命令行中进行的。C语言提供了一系列内置的函数来读取给定的输入，并根据需要填充到程序中。  
+当我们提到 **输出** 时，这意味着要在屏幕上、打印机上或者任意文件中显示一些数据。C语言提供了一系列内置的函数来输出数据到计算机屏幕上和保存数据到文本文件或二进制文件中。
+
+### 标准文件
+
+C语言把所有的设备都当作文件。所以设备（比如显示器）被处理的方式与文件相同。以下三个文件会在程序执行时自动打开，以便访问键盘和屏幕。
+
+|标准文件|文件指针|设备|
+|--|--|--|
+|标准输入|stdin|键盘|
+|标准输出|stdout|屏幕|
+|标准错误|stderr|屏幕|
+
+文件指针是访问文件的方式，现在聊聊如何从屏幕读取值以及如何把结果输出到屏幕上。  
+C语言中的I/O（输入/输出）通常使用`printf()`和`scanf()`两个函数。  
+`scanf()`函数用于从标准输入（键盘）读取并格式化，`printf()`函数发送格式化输出到标准输出（屏幕）。
+
+```c
+#include <stdio.h> // 执行printf()函数需要该库 
+
+int main()
+{
+    printf("C 学习之路"); // 显示引号中的内容
+
+    return 0;
+}
+```
+
+当上面的代码被编译和执行时，运行结果：
+> C 学习之路
+
+**实例解析：**
+
+- 所有的C语言程序都需要包含`main()`函数。代码从`main()`函数开始执行。
+- `printf()`用于格式化输出到屏幕。`printf()`函数在`<stdio.h>`头文件中声明。
+- `<stdio.h>`是一个头文件（标准输入输出头文件）并且`#include`是一个预处理命令，用来引入头文件。当编译器遇到`printf()`函数时，如果没有找到`stdio.h`头文件，会发生编译错误。
+- `return 0;`语句用于表示退出程序。
+
+```c
+/* %d格式化输出整数 */
+#include  <stdio.h>
+
+int main()
+{
+    int testInteger = 5;
+    printf("Number = %d", testInteger);
+    return 0;
+}
+```
+
+当上面的代码被编译和执行时，运行结果：
+> Number  = 5
+
+在`printf()`函数的引号中使用"%d"（整型）来匹配整型变量`testInteger`并输出到屏幕。
+
+```c
+/* %f格式化输出浮点型数据 */
+#include  <stdio.h>
+
+int main()
+{
+    float f;
+    printf("Enter a number:");
+    // %f 匹配浮点型数据
+    scanf("%f", &f);
+    printf("Value = %f", f);
+    return 0;
+}
+```
+
+当上面的代码被编译和执行时，运行结果：
+> Enter a number:0.75  
+Value = 0.750000
+
+### getchar()&putchar()函数
+
+`int getchar(void)`函数从屏幕读取下一个可用的字符，并把它返回为一个整数。这个函数在同一个时间内只会读取一个单一的字符。可以在循环内使用这个方法，以便从屏幕上读取多个字符。  
+`int putchar(int c)`函数把字符输出到屏幕上，并返回相同的字符。这个函数在同一个时间内只会输出一个单一的字符。可以在循环内使用这个方法，以便在屏幕上输出多个字符。 
+请看下面的实例：
+
+```c
+#include <stdio.h>
+
+int main()
+{
+    int c;
+
+    printf("Enter a value : ");
+    c = getchar();
+
+    printf("\nYou entered : ");
+    putchar(c);
+    printf("\n");
+    return 0;
+}
+```
+
+当上面的代码被编译和执行时，它会等待你输入一些文本，当你输入一个文本并按下回车键时，程序会继续并只会读取一个单一的字符，显示如下：
+> Enter a value : rushadiao  
+You entered : r
+
+### gets()&puts()函数
+
+`char *gets(char *s)`函数从`stdin`读取一行到`s`所指向的缓冲区，直到一个终止符或`EOF`。  
+`int puts(const char *s)`函数把字符串`s`和一个尾随的换行符写入到`stdout`。
+
+```c
+#include <stdio.h>
+
+int main()
+{
+    char str[100];
+
+    printf("Enter a value: ");
+    gets(str);
+
+    printf("\nYou entered: ");
+    puts(str);
+
+    return 0;
+}
+```
+
+当上面的代码被编译和执行时，它会等待你输入一些文本，当输入一个文本并按下回车键时，程序会继续并读取一整行直到该行结束，显示如下：
+> Enter a value: rushadiao  
+You entered: rushadiao
+
+### scanf()&printf()函数
+
+`int scanf(const char *format,...)`函数从标准输入流`stdin`读取输入，并根据提供的`format`来浏览输入。  
+`int printf(const char *format,...)`函数把输出写入到标准输出流`stdout`，并根据提供的格式产出输入。  
+`format`可以是一个简单的常量字符串，但是可以分别指定`%s`、`%d`、`%c`、`%f`等来输出或读取字符串、整数、字符或浮点数。还有许多其他可用的格式选项，可以根据需要使用。  
+现在通过下面这个简单的实例来加深理解：
+
+```c
+#include <stdio.h>
+
+int main()
+{
+    char str[100];
+    int i;
+
+    printf("Enter a value: ");
+    scanf("%s %d", str, &i);
+
+    printf("\nYou entered: %s %d", str, i);
+    printf("\n");
+
+    return 0;
+}
+```
+
+当上面的代码被编译和执行时，它会等待你输入一些文本，当你输入一个文本并按下回车键时，程序会继续并读取输入，显示如下：
+> You entered: rushadiao 1973Enter a value: rushadiao  
+1973  
+You entered: rushadiao 1973
+
+在这里，应当指出的是，`scanf()`期待输入的格式与给出的`%s`和`%d`相同，这意味着必须提供有效的输入，比如"string integer"，如果提供的是"string string"或"interger innteger"，它会被认为是错误的输入。另外，在读取字符串时，只要遇到一个空格，`scanf()`就会停止读取，所以"this iis test"对scanf()来说是三个字符串。
