@@ -135,6 +135,7 @@
     - [插入排序](#插入排序)
     - [希尔排序](#希尔排序)
     - [归并排序](#归并排序)
+    - [快速排序](#快速排序)
 
 ## C 程序结构
 
@@ -4635,3 +4636,172 @@ int main()
 当上面的代码被编译和执行时，运行结果：
 > 3 5 9 22 32 34 35 37 50 55 64 70 82 89
 
+### 快速排序
+
+在区间中随机挑选一个元素作基准，将小于基准的元素放在基准之前，大于基准的元素放在基准之后，再分别对小数区与大数区进行排序。  
+过程演示：
+
+![快速排序](README_files/23.gif)
+
+**迭代法：**
+
+```c
+#include <stdio.h>
+
+typedef struct _Range
+{
+    int start, end;
+} Range;
+
+Range new_Range(int s, int e)
+{
+    Range r;
+    r.start = s;
+    r.end = e;
+    return r;
+}
+
+void swap(int *x, int *y)
+{
+    int t = *x;
+    *x = *y;
+    *y = t;
+}
+
+void quick_sort(int arr[], const int len)
+{
+    if (len <= 0)
+    {
+        return; // 避免len等于负值时引起错误
+    }
+    Range r[len];
+    int p = 0;
+    r[p++] = new_Range(0, len - 1);
+    while (p)
+    {
+        Range range = r[--p];
+        if (range.start >= range.end)
+        {
+            continue;
+        }
+        int mid = arr[(range.start + range.end) / 2];
+        int left = range.start, right = range.end;
+        do
+        {
+            while (arr[left] < mid)
+            {
+                ++left;
+            }
+            while (arr[right] > mid)
+            {
+                --right;
+            }
+            if (left <= right)
+            {
+                swap(&arr[left], &arr[right]);
+                left++;
+                right--;
+            }
+            
+            
+        } while (left <= right);
+        
+        if (range.start < right)
+        {
+            r[p++] = new_Range(range.start, right);
+        }
+        if (range.end > left)
+        {
+            r[p++] = new_Range(left, range.end);
+        }
+        
+    }
+    
+    
+}
+
+int main()
+{
+    int arr[] = {22, 34, 3, 32, 81, 55, 89, 50, 37, 5, 64, 35, 9, 70};
+    int len = (int)sizeof(arr) / (int)sizeof(*arr);
+    quick_sort(arr, len);
+    for (int i = 0; i < len; i++)
+    {
+        printf("%d ", arr[i]);
+    }
+    
+    return 0;
+}
+```
+
+当上面的代码被编译和执行时，运行结果：
+> 3 5 9 22 32 34 35 37 50 55 64 70 81 89
+
+**递归法：**
+
+```c
+#include <stdio.h>
+
+void swap(int *x, int *y)
+{
+    int t = *x;
+    *x = *y;
+    *y = t;
+}
+
+void quick_sort_recursive(int arr[], int start, int end)
+{
+    if(start >= end)
+    {
+        return;
+    }
+    int mid = arr[end];
+    int left = start, right = end - 1;
+    while (left < right)
+    {
+        while(arr[left] < mid && left < right)
+        {
+            left++;
+        }
+        while (arr[right] >= mid && left < right)
+        {
+            right--;
+        }
+        swap(&arr[left], &arr[right]);
+    }
+    if (arr[left] >= arr[end])
+    {
+        swap(&arr[left], &arr[end]);
+    }
+    else
+    {
+        left++;
+    }
+    if (left)
+    {
+        quick_sort_recursive(arr, start, left - 1);
+    }
+    quick_sort_recursive(arr, left + 1, end);
+}
+
+void quick_sort(int arr[], int len)
+{
+    quick_sort_recursive(arr, 0, len - 1);
+}
+
+int main()
+{
+    int arr[] = {22, 34, 3, 32, 81, 55, 89, 50, 37, 5, 64, 35, 9, 70};
+    int len = (int)sizeof(arr) / (int)sizeof(*arr);
+    quick_sort(arr, len);
+    for (int i = 0; i < len; i++)
+    {
+        printf("%d ", arr[i]);
+    }
+    
+    return 0;
+}
+```
+
+当上面的代码被编译和执行时，运行结果：
+> 3 5 9 22 32 34 35 37 50 55 64 70 81 89
